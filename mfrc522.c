@@ -60,7 +60,9 @@ void MFRC522_Init() {
     MFRC522_AntennaOn();
 }
 
-uint8_t MFRC522_ToCard(uint8_t command, uint8_t *sendData, uint8_t sendLen, uint8_t *backData, uint8_t *backLen) {
+// backSize is the size of backData in bytes; the reply is cut off there so it can't overflow.
+// backLen still reports the full reply length in bits, so callers can spot a wrong-sized reply.
+uint8_t MFRC522_ToCard(uint8_t command, uint8_t *sendData, uint8_t sendLen, uint8_t *backData, uint8_t *backLen, uint8_t backSize) {
     uint8_t status = MI_ERR;
     uint8_t irqEn = 0x00;
     uint8_t waitIRq = 0x00;
@@ -95,7 +97,8 @@ uint8_t MFRC522_ToCard(uint8_t command, uint8_t *sendData, uint8_t sendLen, uint
     while (1) {
         n = MFRC522_ReadRegister(ComIrqReg);
         i--;
-        if (~(i != 0 && !(n & 0x01) && !(n & waitIRq))) {
+        // Stop on timeout, timer IRQ (no card answered), or the expected RX/idle IRQ
+        if (!(i != 0 && !(n & 0x01) && !(n & waitIRq))) {
             break;
         }
     }
@@ -121,8 +124,8 @@ uint8_t MFRC522_ToCard(uint8_t command, uint8_t *sendData, uint8_t sendLen, uint
                 if (n == 0) {
                     n = 1;
                 }
-                if (n > 16) {
-                    n = 16;
+                if (n > backSize) {
+                    n = backSize;
                 }
 
                 for (i = 0; i < n; i++) {
@@ -141,7 +144,7 @@ uint8_t MFRC522_Request(uint8_t reqMode, uint8_t *TagType) {
     uint8_t backBits;
     MFRC522_WriteRegister(BitFramingReg, 0x07);
     TagType[0] = reqMode;
-    status = MFRC522_ToCard(PCD_TRANSCEIVE, TagType, 1, TagType, &backBits);
+    status = MFRC522_ToCard(PCD_TRANSCEIVE, TagType, 1, TagType, &backBits, 2);
     if ((status != MI_OK) || (backBits != 0x10)) {
         status = MI_ERR;
     }
@@ -157,7 +160,7 @@ uint8_t MFRC522_Anticoll(uint8_t *serNum) {
     MFRC522_WriteRegister(BitFramingReg, 0x00);
     serNum[0] = PICC_ANTICOLL;
     serNum[1] = 0x20;
-    status = MFRC522_ToCard(PCD_TRANSCEIVE, serNum, 2, serNum, &unLen);
+    status = MFRC522_ToCard(PCD_TRANSCEIVE, serNum, 2, serNum, &unLen, 5);
 
     if (status == MI_OK) {
         for (i = 0; i < 4; i++) {

@@ -38,18 +38,18 @@
 
 // --- Function Prototypes ---
 void MFRC522_Init();
-uint8_t MFRC522_Request(uint8_t reqMode, uint8_t *TagType);
-uint8_t MFRC522_Anticoll(uint8_t *serNum);
+uint8_t MFRC522_Request(uint8_t reqMode, uint8_t *TagType);   // TagType: at least 2 bytes
+uint8_t MFRC522_Anticoll(uint8_t *serNum);                      // serNum: at least 5 bytes
 void MFRC522_WriteRegister(uint8_t addr, uint8_t val);
 uint8_t MFRC522_ReadRegister(uint8_t addr);
 void MFRC522_SetBitMask(uint8_t reg, uint8_t mask);
 void MFRC522_ClearBitMask(uint8_t reg, uint8_t mask);
 void MFRC522_AntennaOn();
-uint8_t MFRC522_ToCard(uint8_t command, uint8_t *sendData, uint8_t sendLen, uint8_t *backData, uint8_t *backLen);
+uint8_t MFRC522_ToCard(uint8_t command, uint8_t *sendData, uint8_t sendLen, uint8_t *backData, uint8_t *backLen, uint8_t backSize);
 
 // --- User-facing Functions ---
 // These are the two functions your main.c file uses
 uint8_t MFRC522_IsCardPresent();
-uint8_t MFRC522_ReadCardSerial(uint8_t *str);
+uint8_t MFRC522_ReadCardSerial(uint8_t *str);  // str: at least 5 bytes (4-byte ID + checksum)
 
 #endif
